@@ -70,7 +70,8 @@ void readjson(std::ifstream &ifile){
         std::cout << "Json::parseFromStream  failed!" << std::endl;
         return;
     }
-    std::cout << root_group["name"] << std::endl;
+    std::string s = root_group["name"].asString();
+    std::cout << s << std::endl;
     std::cout << root_group["kernel"] << std::endl;
     
 }
