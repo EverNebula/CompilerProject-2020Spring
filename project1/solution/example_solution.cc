@@ -314,7 +314,8 @@ void readjson(std::ifstream &ifile){
         std::cout << "Json::parseFromStream  failed!" << std::endl;
         return;
     }
-    std::cout << root_group["name"] << std::endl;
+    std::string s = root_group["name"].asString();
+    std::cout << s << std::endl;
     std::cout << root_group["kernel"] << std::endl;
     
     parse_P(string("A<16, 32>[i, j] = A<16, 32>[i, j] + alpha<1> * (B<16, 32>[i, k] * C<32, 32>[k, j]); A<16, 32>[i, j] = A<16, 32>[i, j] + beta<1> * D<16, 32>[i, j];"));
