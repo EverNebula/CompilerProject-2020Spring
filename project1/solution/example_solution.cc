@@ -7,10 +7,14 @@
 #include <iostream>
 #include <cstdio>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <cstring>
 #include <dirent.h>
 #include <json/json.h>
+
+#include "parser.h"
+#include "IRVisitor.h"
 using std::string;
 
 // debug output
@@ -54,6 +58,7 @@ void real(){
     if ((dir = opendir ("../project1/cases/")) != NULL) {
         /* print all the files and directories within directory */
         while ((ent = readdir (dir)) != NULL) {
+
             char jsonfilename[256] = "../project1/cases/";
             if(strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name,"..") == 0)
                 continue;
@@ -384,7 +389,13 @@ void readjson(std::ifstream &ifile){
     }
     std::string s = root_group["name"].asString();
     std::cout << s << std::endl;
-    std::cout << root_group["kernel"] << std::endl;
-    
-    parse_P(string("A<16, 32>[i, j] = A<16, 32>[i, j] + alpha<1> * (B<16, 32>[i, k] * C<32, 32>[k, j]); A<16, 32>[i, j] = A<16, 32>[i, j] + beta<1> * D<16, 32>[i, j];"));
+    // std::cout << root_group["kernel"] << std::endl;
+    Parser psr(root_group["data_type"].asString());
+    psr.parse_TRef("A<6,5>[i,j]");
+    IRVisitor vistor;
+    for(auto v : psr.index_list){
+        std::cout << v.first << std::endl;
+        v.second.visit_expr(&vistor);
+    }
+    // parse_P(string("A<16, 32>[i, j] = A<16, 32>[i, j] + alpha<1> * (B<16, 32>[i, k] * C<32, 32>[k, j]); A<16, 32>[i, j] = A<16, 32>[i, j] + beta<1> * D<16, 32>[i, j];"));
 }

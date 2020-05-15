@@ -30,6 +30,7 @@ namespace Internal {
 
 
 void IRVisitor::visit(Ref<const IntImm> op) {
+    std::cout << op->value() << std::endl;
     return;
 }
 
