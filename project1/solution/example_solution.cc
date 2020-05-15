@@ -90,6 +90,74 @@ void parse_FloatV(string str)
 void parse_IdExpr(string str)
 {
     dprintf("IdExpr: %s\n", str.c_str());
+
+    int idx = 0, las = 0, len = str.length();
+    int bkt = 0;
+
+    // + 
+    for (idx = 0; idx < len; ++idx)
+    {
+        if (str[idx] == '(')
+            bkt++;
+        else if (str[idx] == ')')
+            bkt--;
+        else if (bkt == 0)
+        {
+            if (str[idx] == '+')
+                break;
+        }
+    }
+
+    if (idx != len)
+    {
+
+        if (str[idx+1] < '0' || str[idx+1] > '9')
+        {
+            // IdExpr -> IdExpr + IdExpr
+            parse_IdExpr(str.substr(idx+1));
+        }
+        else
+        {
+            // IdExpr -> IdExpr + IntV
+            parse_IntV(str.substr(idx+1));
+        }
+
+        parse_IdExpr(str.substr(0, idx));
+        return;
+    }
+
+    // *   /   %   //($)
+    for (idx = 0; idx < len; ++idx)
+    {
+        if (str[idx] == '(')
+            bkt++;
+        else if (str[idx] == ')')
+            bkt--;
+        else if (bkt == 0)
+        {
+            if (str[idx] == '*' || str[idx] == '/' 
+                || str[idx] == '%' || str[idx] == '$')
+                break;
+        }
+    }
+
+    if (idx != len)
+    {
+        parse_IntV(str.substr(idx+1));
+        parse_IdExpr(str.substr(0, idx));
+        return;
+    }
+
+
+    // bracket
+    if (str[0] == '(' && str[len-1] == ')')
+    {
+        parse_IdExpr(str.substr(1, len-2));
+        return;
+    }
+
+    // Id
+    parse_Id(str);
 }
 
 void parse_Const(string str)
