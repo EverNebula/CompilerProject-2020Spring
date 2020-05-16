@@ -33,6 +33,7 @@ public :
         index_inlhs.clear();
         index_inrhs.clear();
         var_range.clear();
+        tmpVec.clear();
     }
     Type index_type;
 
@@ -41,6 +42,8 @@ public :
     std::vector<string> outvec;
     Type data_type;
     string kernel;
+
+    std::map<string, std::vector<size_t>> tmpVec;
 
 
     // index map

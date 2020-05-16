@@ -497,8 +497,13 @@ Parser:: parse_S(string str, std::vector<Expr> &vars)
         now_inlhs = false;
 
         // vars[0] -> lhs ;  vars[1] -> temp
+        std::stringstream tssm;
+        tssm << "temp" << tmpVec.size() + 1;
+        string tempName = tssm.str();
         vars.push_back(lhs);
-        vars.push_back(Var::make(data_type, "temp", (lhs.as<Var>())->args, (lhs.as<Var>())->shape));
+        vars.push_back(Var::make(data_type, tempName, (lhs.as<Var>())->args, (lhs.as<Var>())->shape));
+
+        tmpVec.insert(std::make_pair(tempName, (lhs.as<Var>())->shape) );
 
         bool flag = true;
         do
@@ -651,6 +656,7 @@ Parser:: build_Kernel(){
         ssm << ",";
     }
 
+
     int loopi = 0;
     for(auto outstr : outvec){
         ++ loopi;
@@ -662,19 +668,37 @@ Parser:: build_Kernel(){
         ssm << tp << " (&" << outstr << ")";
         for(auto irange : itr->second){
 
-
+        
             if(itr->second.size() == 1 && irange == 1) 
             {
                 ;//no []
             }
-            else
+            else{
                 ssm << "[" << irange << "]";
+            }
+
         }
         if(loopi != outvec.size())
             ssm << ",";
     }
+
     ssm << ')';
 
+    //Add temp declaration
+    std::stringstream tempdc;
+    for(auto each : tmpVec){
+        tempdc << tp << " " << each.first;
+        for(auto rg : each.second){
+            if(rg == 1 && each.second.size() == 1){
+                ;//no []
+            }
+            else{
+                tempdc << "[" << rg << "]";
+            }
+        }
+
+        tempdc << ";\n";
+    }
 
     string filename = "./kernels/" + name + ".cc";
     std::cout << filename << std::endl;
@@ -688,12 +712,16 @@ Parser:: build_Kernel(){
     //function signature
     dstfile << ssm.str();
 
+    //function { and temp declaration
+    dstfile << "{\n" << tempdc.str();
 
 
     IRPrinter printer;
     std::string code = printer.print(knoderef);
 
     //function body
-    dstfile << code << std::endl;
+    dstfile << code;
 
+    //function }
+    dstfile << "\n}" << std::endl; 
 }
