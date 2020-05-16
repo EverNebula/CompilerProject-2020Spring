@@ -37,12 +37,16 @@ public :
 
     Expr parse_IdExpr(string str);
 
-    void parse_Const(string str);
+    Expr parse_Const(string str);
 
     std::vector<Expr> parse_AList(string str);
     std::vector<size_t> parse_CList(string str);
 
     Expr parse_TRef(string str);
+    Expr parse_LHS(string str);
+
+    Expr parse_SRef(string str);
+    Expr parse_RHS(string str);
 
 
     Stmt  parse_P(string str);

@@ -391,11 +391,9 @@ void readjson(std::ifstream &ifile){
     std::cout << s << std::endl;
     // std::cout << root_group["kernel"] << std::endl;
     Parser psr(root_group["data_type"].asString());
-    psr.parse_TRef("A<6,5>[i,j]");
+    Expr tref = psr.parse_RHS("B<7>[j+1]");
     IRVisitor vistor;
-    for(auto v : psr.index_list){
-        std::cout << v.first << std::endl;
-        v.second.visit_expr(&vistor);
-    }
+    tref.visit_expr(&vistor);
+    
     // parse_P(string("A<16, 32>[i, j] = A<16, 32>[i, j] + alpha<1> * (B<16, 32>[i, k] * C<32, 32>[k, j]); A<16, 32>[i, j] = A<16, 32>[i, j] + beta<1> * D<16, 32>[i, j];"));
 }
