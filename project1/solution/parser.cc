@@ -383,9 +383,9 @@ Parser:: parse_RHS(string str)
     // +   -
     for (idx = 0; idx < len; ++idx)
     {
-        if (str[idx] == '(')
+        if (str[idx] == '(' || str[idx] == '[')
             bkt++;
-        else if (str[idx] == ')')
+        else if (str[idx] == ')' || str[idx] == ']')
             bkt--;
         else if (bkt == 0)
         {
@@ -405,9 +405,9 @@ Parser:: parse_RHS(string str)
     // *   /   %   //($)
     for (idx = 0; idx < len; ++idx)
     {
-        if (str[idx] == '(')
+        if (str[idx] == '(' || str[idx] == '[')
             bkt++;
-        else if (str[idx] == ')')
+        else if (str[idx] == ')' || str[idx] == ']')
             bkt--;
         else if (bkt == 0)
         {
