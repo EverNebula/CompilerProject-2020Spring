@@ -1,6 +1,7 @@
 #include "parser.h"
 #include <climits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <sys/_types/_size_t.h>
 #include <utility>
@@ -374,7 +375,7 @@ Expr
 Parser:: parse_RHS(string str)
 {
     // dprintf("RHS: %s\n", str.c_str());
-    std::cout << "!! : " << str << std::endl;
+    // std::cout << "!! : " << str << std::endl;
 
 
     int idx = 0, las = 0, len = str.length();
@@ -460,4 +461,69 @@ Parser:: parse_RHS(string str)
 
     // Const
     return parse_Const(str);
+}
+
+Stmt
+Parser:: parse_S(string str)
+{
+    // dprintf("S: %s\n", str.c_str());
+    int idx = 0;
+
+    if((idx = str.find('=', idx)) != string::npos)
+    {
+        Expr lhs = parse_LHS(str.substr(0, idx));
+        Expr rhs = parse_RHS(str.substr(idx+1));
+        return Move::make(lhs, rhs, MoveType::MemToMem);
+    }
+    else
+    {
+        std::cout << "invalid statement. (without =)" << std::endl;
+    }
+}
+
+std::vector<Stmt>
+Parser:: parse_P(string str)
+{
+    std::vector<Stmt> res;
+ 
+    int idx = 0, las = 0;
+
+    // erase all space
+    while((idx = str.find(' ', idx)) != string::npos)
+    {
+        str.erase(idx,1);
+    }
+    idx = 0;
+    while((idx = str.find("//", idx)) != string::npos)
+    {
+        str.replace(idx, 2, "$");
+    }
+    // dprintf("P: %s\n", str.c_str());
+
+    idx = 0;
+    while((idx = str.find(';', idx)) != string::npos)
+    {
+        res.push_back(parse_S(str.substr(las, idx-las)));
+        las = ++idx;
+    }
+    return res;
+}
+
+
+void 
+Parser:: build_Kernel(){
+    std::vector<Stmt> stmts = parse_P(kernel);
+    std::vector<Expr> idx_lst = {};
+    for(auto val : index_list)
+        idx_lst.push_back(val.second);
+    
+    
+    Stmt loop_nest = LoopNest::make(idx_lst, stmts);
+    std::vector<Expr> blank = {};
+    Group knoderef = Kernel::make(name, blank, blank, {loop_nest}, KernelType::CPU);
+
+    IRPrinter printer;
+    std::string code = printer.print(knoderef);
+    std::cout << code << std::endl;
+
 }

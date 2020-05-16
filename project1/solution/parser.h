@@ -6,7 +6,9 @@
 #include <sstream>
 #include <map>
 #include <string>
+#include <vector>
 #include "IRVisitor.h"
+#include "IRPrinter.h"
 
 using std::string;
 
@@ -14,14 +16,23 @@ using namespace Boost::Internal;
 
 class Parser{
 public :
-    Parser(string _data_type) : index_type(Type::int_scalar(32)), 
-        data_type(_data_type.compare("float") == 0 ? Type::float_scalar(32) : Type::int_scalar(32)){
+    explicit Parser() = delete;
+    explicit Parser(Parser &psr) = delete;
 
+    Parser(string _name, std::vector<string> _insvec, std::vector<string> _outvec, string _data_type, string _kernel) : 
+    index_type(Type::int_scalar(32)), name(_name), insvec(_insvec), outvec(_outvec),
+    data_type(_data_type.compare("float") == 0 ? Type::float_scalar(32) : Type::int_scalar(32)),
+    kernel(_kernel){
+        ;
     }
     Type index_type;
-    Type data_type;
 
-    Group kernel;
+    string name;
+    std::vector<string> insvec;
+    std::vector<string> outvec;
+    Type data_type;
+    string kernel;
+
 
     // index map
     std::map<string, Expr> index_list;
@@ -48,8 +59,11 @@ public :
     Expr parse_SRef(string str);
     Expr parse_RHS(string str);
 
+    Stmt parse_S(string str);
+    std::vector<Stmt> parse_P(string str);
 
-    Stmt  parse_P(string str);
+    void build_Kernel();
+
 };
 
 #endif
