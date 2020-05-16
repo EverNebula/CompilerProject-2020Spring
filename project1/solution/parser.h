@@ -5,6 +5,7 @@
 #include "IR.h"
 #include <sstream>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 #include "IRVisitor.h"
@@ -36,6 +37,9 @@ public :
 
     // index map
     std::map<string, Expr> index_list;
+    std::set<string> index_inlhs;
+    std::set<string> index_inrhs;
+
     Expr findIdx(string id);
     void updateIdxRange(std::vector<size_t> &clst, std::vector<Expr> &alst);
 
@@ -59,7 +63,7 @@ public :
     Expr parse_SRef(string str);
     Expr parse_RHS(string str);
 
-    Stmt parse_S(string str);
+    std::vector<Stmt> parse_S(string str, std::vector<Expr> &vars);
     std::vector<Stmt> parse_P(string str);
 
     void build_Kernel();

@@ -66,7 +66,7 @@ void real(){
             printf ("%s\n", jsonfilename);
             std::ifstream ifile(jsonfilename, std::ios::in);
             readjson(ifile);
-            break;
+            // break;
         }
         closedir (dir);
     } else {
@@ -99,8 +99,6 @@ void readjson(std::ifstream &ifile){
     Parser psr(name, insvec, outvec, data_type, kernel);
     psr.build_Kernel();
     // Expr tref = psr.parse_RHS("A<4>[k]+B<7,8>[j+1,j+2]");
-    
-    
     
     // parse_P(string("A<16, 32>[i, j] = A<16, 32>[i, j] + alpha<1> * (B<16, 32>[i, k] * C<32, 32>[k, j]); A<16, 32>[i, j] = A<16, 32>[i, j] + beta<1> * D<16, 32>[i, j];"));
 }

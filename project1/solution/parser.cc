@@ -12,6 +12,8 @@ const int MIN_BOUND = -1e6;
 const int MAX_BOUND = 1e6;
 const int DEF_EXT = MAX_BOUND - MIN_BOUND;
 
+bool now_inlhs = false;
+
 Expr
 Parser:: findIdx(string id){
     for(auto val : index_list){
@@ -247,9 +249,16 @@ Parser::parse_IdExpr(string str)
 
     // Id
     Expr exprIdx = findIdx( parse_Id(str));
+
+    if (now_inlhs)
+        index_inlhs.insert(parse_Id(str));
+    else
+        index_inrhs.insert(parse_Id(str));
+
     if(exprIdx.defined())
         return exprIdx;
     else{
+
         Expr newdom = Dom::make(index_type, MIN_BOUND, DEF_EXT);
         Expr newIdx = Index::make(index_type, parse_Id(str), newdom, IndexType::Spatial);
         index_list.insert(std::make_pair(parse_Id(str), newIdx));
@@ -463,17 +472,80 @@ Parser:: parse_RHS(string str)
     return parse_Const(str);
 }
 
-Stmt
-Parser:: parse_S(string str)
+std::vector<Stmt>
+Parser:: parse_S(string str, std::vector<Expr> &vars)
 {
+    std::vector<Stmt> retVec;
+    std::vector<Expr> idx_lst;
     // dprintf("S: %s\n", str.c_str());
-    int idx = 0;
+    int idx = 0, las = 0;
+    int len = str.length();
+    char lasop = '+';
 
     if((idx = str.find('=', idx)) != string::npos)
     {
+        now_inlhs = true;
         Expr lhs = parse_LHS(str.substr(0, idx));
-        Expr rhs = parse_RHS(str.substr(idx+1));
-        return Move::make(lhs, rhs, MoveType::MemToMem);
+        now_inlhs = false;
+
+        // vars[0] -> lhs ;  vars[1] -> temp
+        vars.push_back(lhs);
+        vars.push_back(Var::make(data_type, "temp", (lhs.as<Var>())->args, (lhs.as<Var>())->shape));
+
+        bool flag = true;
+        do
+        {
+            int bkt = 0;
+
+            las = ++idx;
+            // +   -
+            for ( ; idx < len; ++idx)
+            {
+                if (str[idx] == '(' || str[idx] == '[')
+                    bkt++;
+                else if (str[idx] == ')' || str[idx] == ']')
+                    bkt--;
+                else if (bkt == 0)
+                {
+                    if (str[idx] == '+' || str[idx] == '-')
+                        break;
+                }
+            }
+
+            Expr expr = parse_RHS(str.substr(las, idx-las));
+            // Expr exprL = parse_RHS(str.substr(0, idx));
+            BinaryOpType optp = lasop == '+' ? BinaryOpType::Add : BinaryOpType::Sub;
+            Expr binary = Binary::make(data_type, optp, vars[1], expr);
+            Stmt mov = Move::make(vars[1], binary, MoveType::MemToMem);
+
+            idx_lst.clear();
+            for(auto val : index_inrhs)
+                if (index_inlhs.count(val) == 0) // not in LHS
+                {
+                    idx_lst.push_back( index_list[val] );
+                }
+            
+            if (idx_lst.size() > 0)
+            {
+                retVec.push_back( LoopNest::make(idx_lst, {mov}) );
+            }
+            else // like 'temp[i][j] = A[i][j]', loopnest is needless.
+            {
+                retVec.push_back( mov );
+            }
+
+            if (idx == len)
+            {
+                flag = false;
+            }
+            else
+            {
+                lasop = str[idx];
+            }
+
+        }while(flag);
+
+        return retVec;
     }
     else
     {
@@ -485,6 +557,7 @@ std::vector<Stmt>
 Parser:: parse_P(string str)
 {
     std::vector<Stmt> res;
+    std::vector<Expr> idx_lst, vars;
  
     int idx = 0, las = 0;
 
@@ -503,8 +576,25 @@ Parser:: parse_P(string str)
     idx = 0;
     while((idx = str.find(';', idx)) != string::npos)
     {
-        res.push_back(parse_S(str.substr(las, idx-las)));
+        // new statement
+        index_inlhs.clear();
+        vars.clear();
+
+        std::vector<Stmt> S = parse_S(str.substr(las, idx-las), vars);
         las = ++idx;
+
+        idx_lst.clear();
+        for(auto val : index_inlhs)
+        {
+            idx_lst.push_back( index_list[val] );
+        }
+
+        // temp initialization
+        Stmt mov1 = Move::make(vars[1], 0, MoveType::MemToMem);
+        res.push_back( LoopNest::make(idx_lst, {mov1}) );
+        res.push_back( LoopNest::make(idx_lst, S) );
+        Stmt mov2 = Move::make(vars[0], vars[1], MoveType::MemToMem);
+        res.push_back( LoopNest::make(idx_lst, {mov2}) );
     }
     return res;
 }
@@ -513,14 +603,14 @@ Parser:: parse_P(string str)
 void 
 Parser:: build_Kernel(){
     std::vector<Stmt> stmts = parse_P(kernel);
-    std::vector<Expr> idx_lst = {};
-    for(auto val : index_list)
-        idx_lst.push_back(val.second);
+    // std::vector<Expr> idx_lst = {};
+    // for(auto val : index_list)
+    //     idx_lst.push_back(val.second);
     
     
-    Stmt loop_nest = LoopNest::make(idx_lst, stmts);
+    // Stmt loop_nest = LoopNest::make(idx_lst, stmts);
     std::vector<Expr> blank = {};
-    Group knoderef = Kernel::make(name, blank, blank, {loop_nest}, KernelType::CPU);
+    Group knoderef = Kernel::make(name, blank, blank, stmts, KernelType::CPU);
 
     IRPrinter printer;
     std::string code = printer.print(knoderef);
