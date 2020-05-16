@@ -632,9 +632,7 @@ Parser:: build_Kernel(){
     if(data_type.is_float())
         tp = "float";
 
-    int loopi = 0;
     for(auto instr : insvec){
-        ++ loopi;
         std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(instr);
         if(itr == var_range.end()){
             std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
@@ -642,9 +640,37 @@ Parser:: build_Kernel(){
         }
         ssm << tp << " (&" << instr << ")";
         for(auto irange : itr->second){
-            ssm << "[" << irange << "]";
+             if(itr->second.size() == 1 && irange == 1) 
+            {
+                ;//no []
+            }
+            else
+                ssm << "[" << irange << "]";
         }
-        if(loopi != insvec.size())
+        
+        ssm << ",";
+    }
+
+    int loopi = 0;
+    for(auto outstr : outvec){
+        ++ loopi;
+        std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(outstr);
+        if(itr == var_range.end()){
+            std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
+            continue;
+        }
+        ssm << tp << " (&" << outstr << ")";
+        for(auto irange : itr->second){
+
+
+            if(itr->second.size() == 1 && irange == 1) 
+            {
+                ;//no []
+            }
+            else
+                ssm << "[" << irange << "]";
+        }
+        if(loopi != outvec.size())
             ssm << ",";
     }
     ssm << ')';
