@@ -1,5 +1,7 @@
 #include "parser.h"
 #include <climits>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -336,6 +338,9 @@ Parser:: parse_TRef(string str)
             std::vector<size_t> clst = parse_CList(str.substr(las, idx-las-1));
             std::vector<Expr> alst = parse_AList(str.substr(idx+1, str.length()-idx-2));
 
+            if(var_range.find(name) == var_range.end())
+                var_range.insert(std::make_pair(name, clst));
+
             updateIdxRange(clst, alst);
             return Var::make(data_type, name, alst, clst);
         }
@@ -369,8 +374,11 @@ Parser:: parse_SRef(string str)
     if((idx = str.find('<', idx)) != string::npos)
     {
         std::vector<Expr> args = {};
-        return Var::make(data_type, parse_Id(str.substr(0, idx)), args, 
-                        parse_CList(str.substr(idx+1, str.length()-idx-2)));
+        string nm = parse_Id(str.substr(0, idx));
+        std::vector<size_t> clst = parse_CList(str.substr(idx+1, str.length()-idx-2));
+        if(var_range.find(nm) == var_range.end())
+            var_range.insert(std::make_pair(nm, clst));
+        return Var::make(data_type, nm, args, clst);
     }
     else
     {
@@ -512,7 +520,6 @@ Parser:: parse_S(string str, std::vector<Expr> &vars)
                 }
             }
 
-
             index_inrhs.clear();
             Expr expr = parse_RHS(str.substr(las, idx-las));
             // Expr exprL = parse_RHS(str.substr(0, idx));
@@ -614,8 +621,79 @@ Parser:: build_Kernel(){
     std::vector<Expr> blank = {};
     Group knoderef = Kernel::make(name, blank, blank, stmts, KernelType::CPU);
 
+    //print signature
+    std::stringstream ssm;
+    ssm.clear();
+    ssm << "void ";
+    ssm << name;
+    ssm << '(';
+
+    string tp = "int";
+    if(data_type.is_float())
+        tp = "float";
+
+    for(auto instr : insvec){
+        std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(instr);
+        if(itr == var_range.end()){
+            std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
+            continue;
+        }
+        ssm << tp << " (&" << instr << ")";
+        for(auto irange : itr->second){
+             if(itr->second.size() == 1 && irange == 1) 
+            {
+                ;//no []
+            }
+            else
+                ssm << "[" << irange << "]";
+        }
+        
+        ssm << ",";
+    }
+
+    int loopi = 0;
+    for(auto outstr : outvec){
+        ++ loopi;
+        std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(outstr);
+        if(itr == var_range.end()){
+            std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
+            continue;
+        }
+        ssm << tp << " (&" << outstr << ")";
+        for(auto irange : itr->second){
+
+
+            if(itr->second.size() == 1 && irange == 1) 
+            {
+                ;//no []
+            }
+            else
+                ssm << "[" << irange << "]";
+        }
+        if(loopi != outvec.size())
+            ssm << ",";
+    }
+    ssm << ')';
+
+
+    string filename = "./kernels/" + name + ".cc";
+    std::cout << filename << std::endl;
+    std::ofstream dstfile(filename, std::fstream::out | std::fstream::trunc);
+    if(!dstfile){
+        std::cout << "Couldn't open kernel_case file : " << filename << std::endl;
+    }
+
+    string incld = "#include \"../run.h\"\n";
+    dstfile << incld;
+    //function signature
+    dstfile << ssm.str();
+
+
+
     IRPrinter printer;
     std::string code = printer.print(knoderef);
-    std::cout << code << std::endl;
+
+    //function body
+    dstfile << code << std::endl;
 
 }
