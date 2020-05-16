@@ -23,6 +23,7 @@
 */
 
 #include "IRPrinter.h"
+#include <sstream>
 
 namespace Boost {
 
@@ -337,26 +338,28 @@ void IRPrinter::visit(Ref<const Move> op) {
 
 
 void IRPrinter::visit(Ref<const Kernel> op) {
+
     print_indent();
-    if (op->kernel_type == KernelType::CPU) {
-        oss << "<CPU>";
-    } else if (op->kernel_type == KernelType::GPU) {
-        oss << "<GPU>";
-    }
-    oss << " " << op->name << "(";
+    // if (op->kernel_type == KernelType::CPU) {
+    //     oss << "<CPU>";
+    // } else if (op->kernel_type == KernelType::GPU) {
+    //     oss << "<GPU>";
+    // }
+    // oss << " " << op->name << "(";
     print_arg = true;
-    for (size_t i = 0; i < op->inputs.size(); ++i) {
-        op->inputs[i].visit_expr(this);
-        if (i < op->inputs.size() - 1) {
-            oss << ", ";
-        }
-    }
-    for (size_t i = 0; i < op->outputs.size(); ++i) {
-        oss << ", ";
-        op->outputs[i].visit_expr(this);
-    }
+    // for (size_t i = 0; i < op->inputs.size(); ++i) {
+    //     op->inputs[i].visit_expr(this);
+    //     if (i < op->inputs.size() - 1) {
+    //         oss << ", ";
+    //     }
+    // }
+    // for (size_t i = 0; i < op->outputs.size(); ++i) {
+    //     oss << ", ";
+    //     op->outputs[i].visit_expr(this);
+    // }
     print_arg = false;
-    oss << ") {\n";
+    // oss << ") {\n";
+    oss << " {\n";
     enter();
     for (auto stmt : op->stmt_list) {
         stmt.visit_stmt(this);
