@@ -512,6 +512,8 @@ Parser:: parse_S(string str, std::vector<Expr> &vars)
                 }
             }
 
+
+            index_inrhs.clear();
             Expr expr = parse_RHS(str.substr(las, idx-las));
             // Expr exprL = parse_RHS(str.substr(0, idx));
             BinaryOpType optp = lasop == '+' ? BinaryOpType::Add : BinaryOpType::Sub;
