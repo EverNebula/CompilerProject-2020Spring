@@ -395,16 +395,16 @@ Parser:: parse_RHS(string str)
     // std::cout << "!! : " << str << std::endl;
 
 
-    int idx = 0, las = 0, len = str.length();
+    int idx = 0, len = str.length();
     int bkt = 0;
 
     // +   -
-    for (idx = 0; idx < len; ++idx)
+    for (idx = len-1; idx >= 0; --idx)
     {
         if (str[idx] == '(' || str[idx] == '[')
-            bkt++;
-        else if (str[idx] == ')' || str[idx] == ']')
             bkt--;
+        else if (str[idx] == ')' || str[idx] == ']')
+            bkt++;
         else if (bkt == 0)
         {
             if (str[idx] == '+' || str[idx] == '-')
@@ -412,21 +412,22 @@ Parser:: parse_RHS(string str)
         }
     }
 
-    if (idx != len)
+    if (idx >= 0)
     {
-        Expr exprR = parse_RHS(str.substr(idx+1));
         Expr exprL = parse_RHS(str.substr(0, idx));
+        Expr exprR = parse_RHS(str.substr(idx+1));
         BinaryOpType optp = str[idx] == '+' ? BinaryOpType::Add : BinaryOpType::Sub;
         return Binary::make(data_type, optp, exprL, exprR);
     }
 
     // *   /   %   //($)
-    for (idx = 0; idx < len; ++idx)
+    bkt = 0;
+    for (idx = len-1; idx >= 0; --idx)
     {
         if (str[idx] == '(' || str[idx] == '[')
-            bkt++;
-        else if (str[idx] == ')' || str[idx] == ']')
             bkt--;
+        else if (str[idx] == ')' || str[idx] == ']')
+            bkt++;
         else if (bkt == 0)
         {
             if (str[idx] == '*' || str[idx] == '/' 
@@ -435,24 +436,38 @@ Parser:: parse_RHS(string str)
         }
     }
 
-    if (idx != len)
+    if (idx >= 0)
     {
-        Expr exprR = parse_RHS(str.substr(idx+1));
         Expr exprL = parse_RHS(str.substr(0, idx));
-        BinaryOpType optp = BinaryOpType::Mul;
-        switch (str[idx]){
-            case '/':
-                optp = BinaryOpType::Div;
-                break;
-            case '%':
-                optp = BinaryOpType::Mod;
-                break;
-            case '$':
-                optp = BinaryOpType::Div;
-                break;
-            default:;
+        Expr exprR = parse_RHS(str.substr(idx+1));
+        
+        if (str[idx] == '/')
+        {
+            if (exprL->type().code == TypeCode::Int)
+                return Binary::make(data_type, BinaryOpType::Div, Cast::make(exprL->type(), Type::float_scalar(32), exprL)
+                                    , exprR);
+            else if (exprL->type().code == TypeCode::Float)
+                return Binary::make(data_type, BinaryOpType::Div, exprL, exprR);
+            else
+                printf("error!\n");
         }
-        return Binary::make(data_type, optp, exprL, exprR);
+        else
+        {
+            BinaryOpType optp = BinaryOpType::Mul;
+            switch (str[idx]){
+                case '/':
+                    optp = BinaryOpType::Div;
+                    break;
+                case '%':
+                    optp = BinaryOpType::Mod;
+                    break;
+                case '$':
+                    optp = BinaryOpType::Div;
+                    break;
+                default:;
+            }
+            return Binary::make(data_type, optp, exprL, exprR);
+        }
     }
 
 

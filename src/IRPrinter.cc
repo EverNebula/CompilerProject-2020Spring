@@ -170,7 +170,12 @@ void IRPrinter::visit(Ref<const Call> op) {
 
 
 void IRPrinter::visit(Ref<const Cast> op) {
-    oss << "(" << op->new_type << ")(";
+    if (op->new_type.code == TypeCode::Int)
+        oss << "(int)(";
+    else if (op->new_type.code == TypeCode::Float)
+        oss << "(float)(";
+    else
+        oss << "(" << op->new_type << ")(";
     // oss << "cast<" << op->new_type << ">(";
     (op->val).visit_expr(this);
     oss << ")";

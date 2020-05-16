@@ -5,6 +5,7 @@
 
 
 bool test_example(std::mt19937 &gen, std::uniform_real_distribution<float> &dis) {
+/*
     float A[32][16] = {{0}};
     float golden[32][16] = {{0}};
     float B[32][16] = {{0}};
@@ -32,6 +33,39 @@ bool test_example(std::mt19937 &gen, std::uniform_real_distribution<float> &dis)
     for (int i = 0; i < 32; ++i) {
         for (int j = 0; j < 16; ++j) {
             if (std::abs(golden[i][j] - A[i][j]) >= 1e-5) {
+                std::cout << "Wrong answer\n";
+                return false;
+            }
+        }
+    }
+    // correct
+    return true;
+*/
+    float A[32][16] = {{0}};
+    float golden[32][16] = {{0}};
+    for (int i = 0; i < 32; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            A[i][j] = dis(gen);
+        }
+    }
+    // compute golden
+    for (int i = 0; i < 32; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            golden[i][j] = A[i][j] + 1. / 3;
+        }
+    }
+    try {
+        kernel_example(A);
+    } catch (...) {
+        std::cout << "Failed because of runtime error\n";
+        return false;
+    }
+
+    // check
+    for (int i = 0; i < 32; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            if (std::abs(golden[i][j] - A[i][j]) >= 1e-5) {
+                printf("%.6lf/%.6lf ", golden[i][j], A[i][j]);
                 std::cout << "Wrong answer\n";
                 return false;
             }

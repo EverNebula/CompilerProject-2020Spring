@@ -1,7 +1,7 @@
 #ifndef PROJECT1_RUN_H
 #define PROJECT1_RUN_H
 
-void kernel_example(float (&B)[32][16], float (&C)[32][16], float (&A)[32][16]);
+void kernel_example(float (&A)[32][16]);
 void kernel_case1(float (&A)[32][16]);
 void kernel_case4(float (&B)[16][32], float (&C)[32][32], float (&A)[16][32]);
 void kernel_case5(float (&B)[16][32], float (&C)[32][32], float (&D)[16][32],
