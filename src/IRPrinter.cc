@@ -359,13 +359,13 @@ void IRPrinter::visit(Ref<const Kernel> op) {
     // }
     print_arg = false;
     // oss << ") {\n";
-    oss << " {\n";
+    // oss << " {\n";
     enter();
     for (auto stmt : op->stmt_list) {
         stmt.visit_stmt(this);
     }
     exit();
-    oss << "}\n";
+    // oss << "}\n";
 }
 
 
