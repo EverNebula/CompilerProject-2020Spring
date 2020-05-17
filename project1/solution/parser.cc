@@ -643,6 +643,7 @@ Parser:: build_Kernel(){
     Group knoderef = Kernel::make(name, blank, blank, stmts, KernelType::CPU);
 
     //print signature
+    bool first = true;
     std::stringstream ssm;
     ssm.clear();
     ssm << "void ";
@@ -654,6 +655,10 @@ Parser:: build_Kernel(){
         tp = "float";
 
     for(auto instr : insvec){
+        if(first == false)
+            ssm << ",";
+
+
         std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(instr);
         if(itr == var_range.end()){
             std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
@@ -668,14 +673,17 @@ Parser:: build_Kernel(){
             else
                 ssm << "[" << irange << "]";
         }
-        
-        ssm << ",";
+        first = false;
     }
 
 
-    int loopi = 0;
     for(auto outstr : outvec){
-        ++ loopi;
+        if(std::find(insvec.begin(), insvec.end(), outstr ) != insvec.end())
+            continue;
+
+        if (first == false)
+            ssm << ",";
+            
         std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(outstr);
         if(itr == var_range.end()){
             std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
@@ -694,8 +702,8 @@ Parser:: build_Kernel(){
             }
 
         }
-        if(loopi != outvec.size())
-            ssm << ",";
+
+        first = false;
     }
 
     ssm << ')';
