@@ -168,7 +168,7 @@ Parser::parse_IdExpr(string str)
 {
     // dprintf("IdExpr: %s\n", str.c_str());
 
-    int idx = 0, las = 0, len = str.length();
+    int idx = 0, len = str.length();
     int bkt = 0;
 
     // + 
@@ -446,10 +446,10 @@ Parser:: parse_RHS(string str)
             if (exprL->type().code == TypeCode::Int)
                 return Binary::make(data_type, BinaryOpType::Div, Cast::make(exprL->type(), Type::float_scalar(32), exprL)
                                     , exprR);
-            else if (exprL->type().code == TypeCode::Float)
-                return Binary::make(data_type, BinaryOpType::Div, exprL, exprR);
             else
-                printf("error!\n");
+                return Binary::make(data_type, BinaryOpType::Div, exprL, exprR);
+            // else
+            //     printf("error!\n");
         }
         else
         {
@@ -579,6 +579,7 @@ Parser:: parse_S(string str, std::vector<Expr> &vars)
     else
     {
         std::cout << "invalid statement. (without =)" << std::endl;
+        return retVec;
     }
 }
 

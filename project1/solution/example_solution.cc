@@ -71,7 +71,7 @@ void real(){
         closedir (dir);
     } else {
     /* could not open directory */
-        std::cout << "1Could not open directory \"cases\"" << std::endl;
+        std::cout << "Could not open directory \"cases\"" << std::endl;
         return ;
     }
 }
