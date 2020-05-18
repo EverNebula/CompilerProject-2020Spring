@@ -5,7 +5,8 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <sys/_types/_size_t.h>
+//#include <sys/_types/_size_t.h>
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -682,7 +683,7 @@ Parser:: build_Kernel(){
 
         if (first == false)
             ssm << ",";
-            
+
         std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(outstr);
         if(itr == var_range.end()){
             std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
