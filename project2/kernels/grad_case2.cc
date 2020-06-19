@@ -1,10 +1,12 @@
 #include "../run2.h"
-void grad_case2(float (& dB)[4][16],float (& dA)[4][16]){
+#include <cstring>
+void grad_case2(float (& A)[4][16],float (& dB)[4][16],float (& dA)[4][16]){
 float temp1[4][16];
-  for (int i = 0; i < 0; ++i) {
-    for (int j = 0; j < 0; ++j) {
-      dB[i][j] = dB[i][j] + (dA[i][j]) * (A[i][j]) + (A[i][j]) * (dA[i][j]);
-      dB[i][j] = dB[i][j];
+  memset(dA, 0, sizeof dA);
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 16; ++j) {
+      dA[i][j] += (dB[i][j]) * (A[i][j]) + (A[i][j]) * (dB[i][j]);
+      dA[i][j] += 0;
     }
   }
 

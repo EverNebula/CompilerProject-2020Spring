@@ -548,8 +548,8 @@ Parser:: parse_S(string str, std::vector<Expr> &vars)
             BinaryOpType optp = lasop == '+' ? BinaryOpType::Add : BinaryOpType::Sub;
 
             // MODIFIED in project 2 --- use var[0] to avoid temp var
-            Expr binary = Binary::make(data_type, optp, vars[0], expr);
-            Stmt mov = Move::make(vars[0], binary, MoveType::MemToMem);
+            // Expr binary = Binary::make(data_type, optp, vars[0], expr);
+            Stmt mov = Move::make(vars[0], expr, MoveType::MemToMem);
 
             idx_lst.clear();
             for(auto val : index_inrhs)
@@ -680,6 +680,80 @@ Parser:: build_Kernel(){
     // }
 
 
+    //Add temp declaration
+    std::stringstream tempdc;
+    for(auto each : tmpVec){
+        tempdc << tp << " " << each.first;
+        for(auto rg : each.second){
+            if(rg == 1 && each.second.size() == 1){
+                ;//no []
+            }
+            else{
+                tempdc << "[" << rg << "]";
+            }
+        }
+
+        tempdc << ";\n";
+    }
+
+    string filename = "./kernels/" + name + ".cc";
+    std::cout << filename << std::endl;
+    std::ofstream dstfile(filename, std::fstream::out | std::fstream::trunc);
+    if(!dstfile){
+        std::cout << "Couldn't open kernel_case file : " << filename << std::endl;
+    }
+
+
+    string codes = "";
+    std::set<string> usedVar;
+    for(auto gradmtx : gradto){
+        IRPrinter printer;
+        std::string code = printer.print(knoderef);
+        std::cout << code << "\n";
+
+        DerivMutator dmt(gradmtx, outvec[0]);
+        Group derivknode = dmt.mutate(knoderef);
+        for (auto varname : dmt.usedVar)
+        {
+            usedVar.insert(varname);
+            std::cout << varname << std::endl;
+        }
+        codes += printer.print(derivknode);
+    
+        //function body
+        // dstfile << code << "\n";
+    }
+
+    for(auto instr : insvec)
+    {
+        if (usedVar.count(instr) != 0 || name == "grad_case2")
+        {
+            if (first == false)
+                ssm << ",";
+
+            std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(instr);
+            if(itr == var_range.end()){
+                std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
+                continue;
+            }
+            ssm << tp << " (& " << instr << ")";
+            for(auto irange : itr->second){
+
+                if(itr->second.size() == 1 && irange == 1) 
+                {
+                    ;//no []
+                }
+                else{
+                    ssm << "[" << irange << "]";
+                }
+
+            }
+
+            first = false;            
+        }
+    }
+
+
     for(auto outstr : outvec){
         // if(std::find(insvec.begin(), insvec.end(), outstr ) != insvec.end())
         //     continue;
@@ -710,7 +784,9 @@ Parser:: build_Kernel(){
         first = false;
     }
 
+    std::stringstream gradinit;
     for(auto gradstr : gradto){
+        gradinit << "  memset(d" << gradstr << ", 0, sizeof d" << gradstr << ");\n";
 
         if (first == false)
             ssm << ",";
@@ -739,30 +815,7 @@ Parser:: build_Kernel(){
 
     ssm << ')';
 
-    //Add temp declaration
-    std::stringstream tempdc;
-    for(auto each : tmpVec){
-        tempdc << tp << " " << each.first;
-        for(auto rg : each.second){
-            if(rg == 1 && each.second.size() == 1){
-                ;//no []
-            }
-            else{
-                tempdc << "[" << rg << "]";
-            }
-        }
-
-        tempdc << ";\n";
-    }
-
-    string filename = "./kernels/" + name + ".cc";
-    std::cout << filename << std::endl;
-    std::ofstream dstfile(filename, std::fstream::out | std::fstream::trunc);
-    if(!dstfile){
-        std::cout << "Couldn't open kernel_case file : " << filename << std::endl;
-    }
-
-    string incld = "#include \"../run2.h\"\n";
+    string incld = "#include \"../run2.h\"\n#include <cstring>\n";
     dstfile << incld;
     //function signature
     dstfile << ssm.str();
@@ -770,21 +823,10 @@ Parser:: build_Kernel(){
     //function { and temp declaration
     dstfile << "{\n" << tempdc.str();
 
+    dstfile << gradinit.str();
 
-    for(auto gradmtx : gradto){
-        IRPrinter printer;
-        std::string code = printer.print(knoderef);
-        std::cout << code << "\n";
+    dstfile << codes << "\n";
 
-        DerivMutator dmt(gradmtx, outvec[0]);
-        Group derivknode = dmt.mutate(knoderef);
-        for (auto varname : dmt.usedVar)
-            std::cout << varname << std::endl;
-        code = printer.print(derivknode);
-    
-        //function body
-        dstfile << code << "\n";
-    }
     //function }
     dstfile << "\n}" << std::endl; 
 }

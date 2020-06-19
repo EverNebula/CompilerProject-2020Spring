@@ -313,7 +313,7 @@ void IRPrinter::visit(Ref<const Move> op) {
     print_indent();
     (op->dst).visit_expr(this);
     // oss << " =<";
-    oss << " = ";
+    oss << " += ";
     /*
     if (op->move_type == MoveType::HostToDevice) {
         oss << "host_to_device";

@@ -1,21 +1,27 @@
 #include "derivmutator.h"
 #include <iostream>
 
+bool in_index = false;
+Ref<const Move> now_move;
+Ref<const Var> grad_var;
 
 // All Expr(0) should be IntImm with value 0
 Expr 
 DerivMutator::visit(Ref<const IntImm> op) {
+    if (in_index) return op;
     return Expr(0);
 }
 
 
 Expr 
 DerivMutator::visit(Ref<const UIntImm> op) {
+    if (in_index) return op;
     return Expr(0);
 }
 
 Expr 
 DerivMutator::visit(Ref<const FloatImm> op) {
+    if (in_index) return op;
     return Expr(0);
 }
 
@@ -29,10 +35,12 @@ DerivMutator::visit(Ref<const Var> op) {
 
     // take derivative of itself
     if(op->name.compare(targetMtx) == 0){
-        return Var::make(op->type(), "d"+op->name, op->args, op->shape);
+        grad_var = Var::make(op->type(), "d"+op->name, op->args, op->shape).as<Var>();
+        return Var::make(now_move->dst.as<Var>()->type(), "d"+now_move->dst.as<Var>()->name, now_move->dst.as<Var>()->args, now_move->dst.as<Var>()->shape);
     }
     else if(op->name.compare(outMtx) == 0){
-        return Var::make(op->type(), "d"+op->name, op->args, op->shape);
+        return Var::make(grad_var->type(), grad_var->name, grad_var->args, grad_var->shape);;
+        // return Var::make(op->type(), "d"+op->name, op->args, op->shape);
     }
     else
     {
@@ -118,7 +126,23 @@ DerivMutator::visit(Ref<const Binary> op) {
 
 Stmt 
 DerivMutator::visit(Ref<const Move> op) {
-    Expr new_dst = mutate(op->dst);
+    now_move = op;
     Expr new_src = mutate(op->src);
+    Expr new_dst = mutate(op->dst);
     return Move::make(new_dst, new_src, op->move_type);
+}
+
+Stmt
+DerivMutator::visit(Ref<const LoopNest> op) {
+    std::vector<Expr> new_index_list;
+    std::vector<Stmt> new_body_list;
+    in_index = true;
+    for (auto index : op->index_list) {
+        new_index_list.push_back(mutate(index));
+    }
+    in_index = false;
+    for (auto body : op->body_list) {
+        new_body_list.push_back(mutate(body));
+    }
+    return LoopNest::make(new_index_list, new_body_list);
 }

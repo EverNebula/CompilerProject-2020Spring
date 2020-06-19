@@ -17,6 +17,7 @@ class DerivMutator : public IRMutator{
     Expr visit(Ref<const Var>) override;
     Expr visit(Ref<const Binary>) override; 
     Stmt visit(Ref<const Move>) override;
+    Stmt visit(Ref<const LoopNest>) override;
 
         
     std::string targetMtx;
