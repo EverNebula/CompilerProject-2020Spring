@@ -100,3 +100,10 @@ DerivMutator::visit(Ref<const Binary> op) {
     }
     // return Binary::make(op->type(), op->op_type, new_a, new_b);
 }
+
+Stmt 
+DerivMutator::visit(Ref<const Move> op) {
+    // Expr new_dst = mutate(op->dst);
+    Expr new_src = mutate(op->src);
+    return Move::make(op->dst, new_src, op->move_type);
+}

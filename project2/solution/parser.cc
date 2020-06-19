@@ -769,8 +769,8 @@ Parser:: build_Kernel(){
     dstfile << "{\n" << tempdc.str();
 
 
-    for(auto outmtx : outvec){
-        DerivMutator dmt(outmtx);
+    for(auto gradmtx : gradto){
+        DerivMutator dmt(gradmtx);
         Group derivknode = dmt.mutate(knoderef);
         IRPrinter printer;
         std::string code = printer.print(derivknode);

@@ -5,7 +5,7 @@ float temp1[2][8][5][5];
     for (int n = 0; n < 0; ++n) {
       for (int p = 0; p < 0; ++p) {
         for (int q = 0; q < 0; ++q) {
-          0 = 0;
+          temp1[n][k][p][q] = 0;
         }
       }
     }
@@ -17,7 +17,7 @@ float temp1[2][8][5][5];
           for (int c = 0; c < 0; ++c) {
             for (int r = 0; r < 0; ++r) {
               for (int s = 0; s < 0; ++s) {
-                0 = 0 + (0) * (C[k][c][r][s]) + (B[n][c][p + r][q + s]) * (0);
+                temp1[n][k][p][q] = 0 + (1) * (C[k][c][r][s]) + (B[n][c][p + r][q + s]) * (0);
               }
             }
           }
@@ -29,7 +29,7 @@ float temp1[2][8][5][5];
     for (int n = 0; n < 0; ++n) {
       for (int p = 0; p < 0; ++p) {
         for (int q = 0; q < 0; ++q) {
-          1 = 0;
+          A[n][k][p][q] = 0;
         }
       }
     }

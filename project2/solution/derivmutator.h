@@ -14,6 +14,8 @@ class DerivMutator : public IRMutator{
     Expr visit(Ref<const FloatImm>) override;
     Expr visit(Ref<const Var>) override;
     Expr visit(Ref<const Binary>) override; 
+    Stmt visit(Ref<const Move>) override;
+
         
     std::string targetMtx;
 };
