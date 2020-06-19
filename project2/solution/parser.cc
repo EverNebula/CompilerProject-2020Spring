@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "derivmutator.h"
 #include <climits>
 #include <fstream>
 #include <iostream>
@@ -169,7 +170,7 @@ Parser::parse_IdExpr(string str)
 {
     // dprintf("IdExpr: %s\n", str.c_str());
 
-    int idx = 0, len = str.length();
+    int idx = 0, las = 0, len = str.length();
     int bkt = 0;
 
     // + 
@@ -447,10 +448,10 @@ Parser:: parse_RHS(string str)
             if (exprL->type().code == TypeCode::Int)
                 return Binary::make(data_type, BinaryOpType::Div, Cast::make(exprL->type(), Type::float_scalar(32), exprL)
                                     , exprR);
-            else
+            else if (exprL->type().code == TypeCode::Float)
                 return Binary::make(data_type, BinaryOpType::Div, exprL, exprR);
-            // else
-            //     printf("error!\n");
+            else
+                printf("error!\n");
         }
         else
         {
@@ -580,7 +581,6 @@ Parser:: parse_S(string str, std::vector<Expr> &vars)
     else
     {
         std::cout << "invalid statement. (without =)" << std::endl;
-        return retVec;
     }
 }
 
@@ -655,32 +655,33 @@ Parser:: build_Kernel(){
     if(data_type.is_float())
         tp = "float";
 
-    for(auto instr : insvec){
-        if(first == false)
-            ssm << ",";
+    // for(auto instr : insvec){
+    //     if(first == false)
+    //         ssm << ",";
 
 
-        std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(instr);
-        if(itr == var_range.end()){
-            std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
-            continue;
-        }
-        ssm << tp << " (&" << instr << ")";
-        for(auto irange : itr->second){
-             if(itr->second.size() == 1 && irange == 1) 
-            {
-                ;//no []
-            }
-            else
-                ssm << "[" << irange << "]";
-        }
-        first = false;
-    }
+    //     std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(instr);
+    //     if(itr == var_range.end()){
+    //         std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
+    //         continue;
+    //     }
+    //     ssm << tp << " (&" << instr << ")";
+    //     for(auto irange : itr->second){
+    //          if(itr->second.size() == 1 && irange == 1) 
+    //         {
+    //             ;//no []
+    //         }
+    //         else
+    //             ssm << "[" << irange << "]";
+    //     }
+    //     first = false;
+    // }
 
 
     for(auto outstr : outvec){
-        if(std::find(insvec.begin(), insvec.end(), outstr ) != insvec.end())
-            continue;
+        // if(std::find(insvec.begin(), insvec.end(), outstr ) != insvec.end())
+        //     continue;
+        // dOutput is necessary
 
         if (first == false)
             ssm << ",";
@@ -690,7 +691,34 @@ Parser:: build_Kernel(){
             std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
             continue;
         }
-        ssm << tp << " (&" << outstr << ")";
+        ssm << tp << " (& d" << outstr << ")";
+        for(auto irange : itr->second){
+
+        
+            if(itr->second.size() == 1 && irange == 1) 
+            {
+                ;//no []
+            }
+            else{
+                ssm << "[" << irange << "]";
+            }
+
+        }
+
+        first = false;
+    }
+
+    for(auto gradstr : gradto){
+
+        if (first == false)
+            ssm << ",";
+
+        std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(gradstr);
+        if(itr == var_range.end()){
+            std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
+            continue;
+        }
+        ssm << tp << " (& d" << gradstr << ")";
         for(auto irange : itr->second){
 
         
@@ -732,7 +760,7 @@ Parser:: build_Kernel(){
         std::cout << "Couldn't open kernel_case file : " << filename << std::endl;
     }
 
-    string incld = "#include \"../run.h\"\n";
+    string incld = "#include \"../run2.h\"\n";
     dstfile << incld;
     //function signature
     dstfile << ssm.str();
@@ -741,12 +769,15 @@ Parser:: build_Kernel(){
     dstfile << "{\n" << tempdc.str();
 
 
-    IRPrinter printer;
-    std::string code = printer.print(knoderef);
-
-    //function body
-    dstfile << code;
-
+    for(auto gradmtx : gradto){
+        DerivMutator dmt(gradmtx);
+        Group derivknode = dmt.mutate(knoderef);
+        IRPrinter printer;
+        std::string code = printer.print(derivknode);
+    
+        //function body
+        dstfile << code << "\n";
+    }
     //function }
     dstfile << "\n}" << std::endl; 
 }
