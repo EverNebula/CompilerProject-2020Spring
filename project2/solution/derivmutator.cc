@@ -29,7 +29,14 @@ DerivMutator::visit(Ref<const Var> op) {
 
     // take derivative of itself
     if(op->name.compare(targetMtx) == 0){
-        return Expr(1);
+        return Var::make(op->type(), "d"+op->name, op->args, op->shape);
+    }
+    else if(op->name.compare(outMtx) == 0){
+        return Var::make(op->type(), "d"+op->name, op->args, op->shape);
+    }
+    else
+    {
+        usedVar.insert(op->name);
     }
     
     return Expr(0);
@@ -111,7 +118,7 @@ DerivMutator::visit(Ref<const Binary> op) {
 
 Stmt 
 DerivMutator::visit(Ref<const Move> op) {
-    // Expr new_dst = mutate(op->dst);
+    Expr new_dst = mutate(op->dst);
     Expr new_src = mutate(op->src);
-    return Move::make(op->dst, new_src, op->move_type);
+    return Move::make(new_dst, new_src, op->move_type);
 }

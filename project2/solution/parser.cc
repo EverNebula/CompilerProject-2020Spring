@@ -546,8 +546,10 @@ Parser:: parse_S(string str, std::vector<Expr> &vars)
             Expr expr = parse_RHS(str.substr(las, idx-las));
             // Expr exprL = parse_RHS(str.substr(0, idx));
             BinaryOpType optp = lasop == '+' ? BinaryOpType::Add : BinaryOpType::Sub;
-            Expr binary = Binary::make(data_type, optp, vars[1], expr);
-            Stmt mov = Move::make(vars[1], binary, MoveType::MemToMem);
+
+            // MODIFIED in project 2 --- use var[0] to avoid temp var
+            Expr binary = Binary::make(data_type, optp, vars[0], expr);
+            Stmt mov = Move::make(vars[0], binary, MoveType::MemToMem);
 
             idx_lst.clear();
             for(auto val : index_inrhs)
@@ -621,11 +623,11 @@ Parser:: parse_P(string str)
         }
 
         // temp initialization
-        Stmt mov1 = Move::make(vars[1], 0, MoveType::MemToMem);
-        res.push_back( LoopNest::make(idx_lst, {mov1}) );
+        // Stmt mov1 = Move::make(vars[1], 0, MoveType::MemToMem);
+        // res.push_back( LoopNest::make(idx_lst, {mov1}) );
         res.push_back( LoopNest::make(idx_lst, S) );
-        Stmt mov2 = Move::make(vars[0], vars[1], MoveType::MemToMem);
-        res.push_back( LoopNest::make(idx_lst, {mov2}) );
+        // Stmt mov2 = Move::make(vars[0], vars[1], MoveType::MemToMem);
+        // res.push_back( LoopNest::make(idx_lst, {mov2}) );
     }
     return res;
 }
@@ -770,10 +772,15 @@ Parser:: build_Kernel(){
 
 
     for(auto gradmtx : gradto){
-        DerivMutator dmt(gradmtx);
-        Group derivknode = dmt.mutate(knoderef);
         IRPrinter printer;
-        std::string code = printer.print(derivknode);
+        std::string code = printer.print(knoderef);
+        std::cout << code << "\n";
+
+        DerivMutator dmt(gradmtx, outvec[0]);
+        Group derivknode = dmt.mutate(knoderef);
+        for (auto varname : dmt.usedVar)
+            std::cout << varname << std::endl;
+        code = printer.print(derivknode);
     
         //function body
         dstfile << code << "\n";
