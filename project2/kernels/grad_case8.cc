@@ -5,7 +5,7 @@ float temp1[32];
     temp1[i] = 0;
   }
   for (int i = 0; i < 0; ++i) {
-    temp1[i] = 0 + 1;
+    temp1[i] = 1;
   }
   for (int i = 0; i < 0; ++i) {
     B[i] = 0;

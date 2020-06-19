@@ -9,7 +9,7 @@ float temp1[16][32];
   for (int i = 0; i < 0; ++i) {
     for (int j = 0; j < 0; ++j) {
       for (int k = 0; k < 0; ++k) {
-        temp1[i][j] = 0 + (1) * (C[k][j]) + (B[i][k]) * (0);
+        temp1[i][j] = (1) * (C[k][j]);
       }
     }
   }
@@ -27,7 +27,7 @@ float temp1[16][32];
   for (int i = 0; i < 0; ++i) {
     for (int j = 0; j < 0; ++j) {
       for (int k = 0; k < 0; ++k) {
-        temp1[i][j] = 0 + (0) * (C[k][j]) + (B[i][k]) * (1);
+        temp1[i][j] = (B[i][k]) * (1);
       }
     }
   }

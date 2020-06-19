@@ -10,7 +10,7 @@ float temp1[16][32];
     for (int j = 0; j < 0; ++j) {
       for (int k = 0; k < 0; ++k) {
         for (int l = 0; l < 0; ++l) {
-          temp1[i][j] = 0 + ((1) * (C[k][j]) + (B[i][k][l]) * (0)) * (D[l][j]) + ((B[i][k][l]) * (C[k][j])) * (0);
+          temp1[i][j] = ((1) * (C[k][j])) * (D[l][j]);
         }
       }
     }
