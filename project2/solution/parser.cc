@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "derivmutator.h"
 #include <climits>
 #include <fstream>
 #include <iostream>
@@ -768,12 +769,15 @@ Parser:: build_Kernel(){
     dstfile << "{\n" << tempdc.str();
 
 
-    IRPrinter printer;
-    std::string code = printer.print(knoderef);
-
-    //function body
-    dstfile << code;
-
+    for(auto outmtx : outvec){
+        DerivMutator dmt(outmtx);
+        Group derivknode = dmt.mutate(knoderef);
+        IRPrinter printer;
+        std::string code = printer.print(derivknode);
+    
+        //function body
+        dstfile << code << "\n";
+    }
     //function }
     dstfile << "\n}" << std::endl; 
 }

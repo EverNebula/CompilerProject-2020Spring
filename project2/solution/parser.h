@@ -14,6 +14,7 @@
 #include "IRVisitor.h"
 #include "IRPrinter.h"
 #include <dirent.h>
+#include "derivmutator.h"
 
 
 using std::string;
