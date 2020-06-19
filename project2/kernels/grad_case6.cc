@@ -17,7 +17,7 @@ float temp1[2][8][5][5];
           for (int c = 0; c < 0; ++c) {
             for (int r = 0; r < 0; ++r) {
               for (int s = 0; s < 0; ++s) {
-                temp1[n][k][p][q] = 0 + (1) * (C[k][c][r][s]) + (B[n][c][p + r][q + s]) * (0);
+                temp1[n][k][p][q] = (1) * (C[k][c][r][s]);
               }
             }
           }

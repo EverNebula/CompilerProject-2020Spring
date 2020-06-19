@@ -8,7 +8,7 @@ float temp1[4][16];
   }
   for (int i = 0; i < 0; ++i) {
     for (int j = 0; j < 0; ++j) {
-      temp1[i][j] = 0 + (1) * (B[i][j]) + (A[i][j]) * (0);
+      temp1[i][j] = (1) * (B[i][j]);
       temp1[i][j] = 0;
     }
   }

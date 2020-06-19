@@ -2,6 +2,7 @@
 #include <iostream>
 
 
+// All Expr(0) should be IntImm with value 0
 Expr 
 DerivMutator::visit(Ref<const IntImm> op) {
     return Expr(0);
@@ -15,7 +16,7 @@ DerivMutator::visit(Ref<const UIntImm> op) {
 
 Expr 
 DerivMutator::visit(Ref<const FloatImm> op) {
-    return Expr(0.0);
+    return Expr(0);
 }
 
 Expr 
@@ -45,16 +46,23 @@ DerivMutator::visit(Ref<const Binary> op) {
     bool aImm = false, bImm = false;
     Expr new_a = mutate(op->a);
     Expr new_b = mutate(op->b);
-    if(op->a.node_type() == Boost::Internal::IRNodeType::IntImm ||
-        op->a.node_type() == Boost::Internal::IRNodeType::UIntImm ||
-        op->a.node_type() == Boost::Internal::IRNodeType::FloatImm){
-            aImm = true;
-        }
-    if(op->b.node_type() == Boost::Internal::IRNodeType::IntImm ||
-        op->b.node_type() == Boost::Internal::IRNodeType::UIntImm ||
-        op->b.node_type() == Boost::Internal::IRNodeType::FloatImm){
-            bImm = true;
-        }
+
+    if(new_a.node_type() == IRNodeType::IntImm && (new_a.as<IntImm>())->value() == 0){
+        aImm = true;
+    }
+    if(new_b.node_type() == IRNodeType::IntImm && (new_b.as<IntImm>())->value() == 0){
+        bImm = true;
+    }
+    // if(op->a.node_type() == Boost::Internal::IRNodeType::IntImm ||
+    //     op->a.node_type() == Boost::Internal::IRNodeType::UIntImm ||
+    //     op->a.node_type() == Boost::Internal::IRNodeType::FloatImm ){
+    //         aImm = true;
+    //     }
+    // if(op->b.node_type() == Boost::Internal::IRNodeType::IntImm ||
+    //     op->b.node_type() == Boost::Internal::IRNodeType::UIntImm ||
+    //     op->b.node_type() == Boost::Internal::IRNodeType::FloatImm){
+    //         bImm = true;
+    //     }
 
     switch(op->op_type){
         case Boost::Internal::BinaryOpType::Add : 
