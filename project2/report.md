@@ -7,11 +7,13 @@ Project2要求我们在之前的基础上实现C++语言的自动求导器。为
 
 邬涵博：因子替换、Index转换
 
-徐昊天：
+徐昊天：函数签名生成、链式求导、消除常数项、语句拆分
 
 刘镇：
 
 github：https://github.com/EverNebula/CompilerProject-2020Spring
+
+（使用了submodule jsoncpp）
 
 
 ## 问题分析
@@ -32,9 +34,115 @@ github：https://github.com/EverNebula/CompilerProject-2020Spring
 
 ## DerivMutator
 
-### 问题及解决1 (例如签名)
+#### 函数签名生成
 
-描述。要有例子。
+观察函数签名的参数规律，发现顺序是输入矩阵、输出矩阵的导数、目标矩阵的导数。
+
+输出矩阵的导数、目标矩阵的导数可以直接根据json文件描述得到，但输入矩阵需要进行一定的推断才能得到，如case2中的A既需要作为目标矩阵的导数也需要作为输入矩阵。
+
+```c++
+void grad_case2(float (& A)[4][16],float (& dB)[4][16],float (& dA)[4][16])
+```
+
+其他可能存在部分输入矩阵不需要等情况，解决方式是在通过DerivMutator修改AST后，再通过一个继承IRVisitor的子类MyVisitor来遍历新的AST，然后在重载的visit中统计所有用到的矩阵变量，并记录在usedVar中。
+
+```c++
+class MyVisitor : public IRVisitor{
+    public:
+        MyVisitor() : IRVisitor(), usedVar({}){};
+        std::set<std::string> usedVar;
+        void visit(Ref<const Var> op) override;
+        void visit(Ref<const Kernel> op) override;
+};
+```
+
+usedVar中记录的矩阵包括原有矩阵和导数矩阵，我们将其与input中的矩阵求交集，结果中的顺序按照input中的顺序，由此可以推断出参数中前半部分需要的矩阵有哪些，并可以生成完整的函数签名。
+
+
+
+#### 链式求导
+
+因子左右替换、消除常数项都在求导过程中完成。
+
+DerivMutator主要就是用于对原AST的求导过程，在其重载的visit函数中完成。
+
+每次求导只针对一个目标，即多个目标就在多个DerivMutator中完成，得到多个求导后的AST，如case4，B、C就是分开求导，对应两个不同的AST，在最终结果中也是在不同循环体中。
+
+```c++
+void grad_case4(float (& B)[16][32],float (& C)[32][32],float (& dA)[16][32],float (& dB)[16][32],float (& dC)[32][32]){
+  memset(dB, 0, sizeof dB);
+  memset(dC, 0, sizeof dC);
+  for (int i = 0; i < 16; ++i) {
+    for (int j = 0; j < 32; ++j) {
+      for (int k = 0; k < 32; ++k) {
+        dB[i][k] += (dA[i][j]) * (C[k][j]);
+      }
+    }
+  }
+  for (int i = 0; i < 16; ++i) {
+    for (int j = 0; j < 32; ++j) {
+      for (int k = 0; k < 32; ++k) {
+        dC[k][j] += (B[i][k]) * (dA[i][j]);
+      }
+    }
+  }
+}
+```
+
+求导过程：
+
+- Imm 常数项：返回Expr(0)
+
+- Var 矩阵变量：当访问到一个矩阵变量时，我们首先需要判断该矩阵是否是相关的矩阵，若是无关矩阵，则当作是常数项，若是目标矩阵或是输出矩阵，则生成新的导数矩阵变量，然后通过全局的记录进行左右交换。
+
+- Binary 表达式：Binary是求导的关键，题目中的式子如
+
+  ```
+  C<4, 16>[i, j] = A<4, 16>[i, j] * B<4, 16>[i, j] + 1.0
+  ```
+
+  都可以看作多个Binary的复合，其中用到的运算符op包括+、-、*、/等，我们将一个Binary看作一个复合函数 $$f=g \ op \ h$$，然后根据op对应的求导法则进行求导，最终得到$f$的导数。在求导过程中可能会出现导数为0的情况，我们若发现$g'$或是$f'$为0，则将最终的求出的为0项直接消去，通过此种方法达到消除常数项的目的。
+
+#### 语句拆分
+
+对于case10，如下
+
+```
+A<8, 8>[i, j] = (B<10, 8>[i, j] + B<10, 8>[i + 1, j] + B<10, 8>[i + 2, j]) / 3.0;
+```
+
+我们发现B有三项，但它们下标不同，我们并不能将这三项同等对待，相比于推断出每项对应的dA下标并合并一次求出B，我们选择在三条语句中完成B的计算。
+
+```c++
+for (int dB0 = 0; dB0 < 10; ++dB0) {
+    for (int j = 0; j < 8; ++j) {
+      if ((dB0 - 2 >= 0) && (dB0 - 2 < 8)) {
+        dB[dB0][j] += ((dA[dB0 - 2][j]) * (3)) / ((3) * (3));
+      }
+      if ((dB0 - 1 >= 0) && (dB0 - 1 < 8)) {
+        dB[dB0][j] += ((dA[dB0 - 1][j]) * (3)) / ((3) * (3));
+      }
+      if ((dB0 >= 0) && (dB0 < 8)) {
+        dB[dB0][j] += ((dA[dB0][j]) * (3)) / ((3) * (3));
+      }
+    }
+}
+```
+
+解决方法如下：
+
+首先，在第一次访问到LHS=RHS的Move结点时，若我们遇到第一个B时，则记录下它为当前的目标curTargetVar，然后遇到其他的B，我们实现了比较函数compare，发现这些B不同，于是将他们保存在allTargetVars中。
+
+```c++
+bool exprcompare(Expr a, Expr b);
+bool varcompare(Ref<const Var> a, Ref<const Var> b);
+bool binarycompare(Ref<const Binary> a, Ref<const Binary> b);
+bool strimmcompare(Ref<const StringImm> a, Ref<const StringImm> b);
+bool intimmcompare(Ref<const IntImm> a, Ref<const IntImm> b);
+bool indexcompare(Ref<const Index> a, Ref<const Index> b);
+```
+
+在完成一次访问Move后，我们在LoopNest中检查allTargetVars，发现不为空，则更新当前目标，并将其从allTargetVars中移除，再次访问Move，直到全部访问完。于是我们的到多个求导后的新Move，在上述例子中我们的到三个新的求导后的Move，于是在最终结果中我们得到三条赋值语句计算B。
 
 
 ## IndexMutator
@@ -43,7 +151,7 @@ github：https://github.com/EverNebula/CompilerProject-2020Spring
 
 尽管DerivMutator输出的结果已经可以正确得到答案，但是对于赋值语句左边的Index会存在计算，这对于时间局部性是很不友好的。因此有了IndexMutator再次对AST遍历，解决最后的index转换问题。
 
-```
+```c++
   for (int k = 0; k < 8; ++k) {
     for (int n = 0; n < 2; ++n) {
       for (int p = 0; p < 5; ++p) {
@@ -63,7 +171,7 @@ github：https://github.com/EverNebula/CompilerProject-2020Spring
 
 上面是DerivMutator输出的结果，而经过IndexMutator，它将会变为：
 
-```
+```c++
   for (int k = 0; k < 8; ++k) {
     for (int n = 0; n < 2; ++n) {
       for (int p = 0; p < 5; ++p) {
@@ -120,13 +228,52 @@ b   *     =>    -   4
 实验代码在Mac OSX操作系统上，编译器为clang-1100.0.33.17。
 
 case 10是一个比较全面的例子，下面给出case 10在不同阶段的代码：
+
+- 初始表达式如下
+
+```c++
+  for (int i = 0; i < 8; ++i) {
+    for (int j = 0; j < 8; ++j) {
+      A[i][j] += (B[i][j] + B[i + 1][j] + B[i + 2][j]) / (3);
+    }
+  }
 ```
 
+- 求导并拆分语句
+
+```c++
+for (int i = 0; i < 8; ++i) {
+    for (int j = 0; j < 8; ++j) {
+      dB[i + 2][j] += ((dA[i][j]) * (3)) / ((3) * (3));
+      dB[i + 1][j] += ((dA[i][j]) * (3)) / ((3) * (3));
+      dB[i][j] += ((dA[i][j]) * (3)) / ((3) * (3));
+    }
+  }
 ```
+
+- Index转换后
+
+```c++
+for (int dB0 = 0; dB0 < 10; ++dB0) {
+    for (int j = 0; j < 8; ++j) {
+      if ((dB0 - 2 >= 0) && (dB0 - 2 < 8)) {
+        dB[dB0][j] += ((dA[dB0 - 2][j]) * (3)) / ((3) * (3));
+      }
+      if ((dB0 - 1 >= 0) && (dB0 - 1 < 8)) {
+        dB[dB0][j] += ((dA[dB0 - 1][j]) * (3)) / ((3) * (3));
+      }
+      if ((dB0 >= 0) && (dB0 < 8)) {
+        dB[dB0][j] += ((dA[dB0][j]) * (3)) / ((3) * (3));
+      }
+    }
+  }
+```
+
+
 
 测试点全部通过：
 
-[fig]
+[![pic](/Users/xuhaotian/gitrepo/CompilerProject-2020Spring/project2/pic.png)
 
 ## 具体例子解释
 

@@ -18,5 +18,4 @@ void grad_case4(float (& B)[16][32],float (& C)[32][32],float (& dA)[16][32],flo
     }
   }
 
-
 }
