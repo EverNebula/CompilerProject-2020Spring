@@ -35,6 +35,13 @@ DerivMutator::visit(Ref<const Var> op) {
 
     // take derivative of itself
     if(op->name.compare(targetMtx) == 0){
+        if(!curTargetVar.defined())
+            curTargetVar = op;
+        if(varcompare(curTargetVar, op) != 0){
+            if(firstTargetVar)
+                this->allTargetVars.push_back(op);
+            return Expr(0);
+        }
         grad_var = Var::make(op->type(), "d"+op->name, op->args, op->shape).as<Var>();
         return Var::make(now_move->dst.as<Var>()->type(), "d"+now_move->dst.as<Var>()->name, now_move->dst.as<Var>()->args, now_move->dst.as<Var>()->shape);
     }
@@ -142,7 +149,14 @@ DerivMutator::visit(Ref<const LoopNest> op) {
     }
     in_index = false;
     for (auto body : op->body_list) {
+        firstTargetVar = true;
         new_body_list.push_back(mutate(body));
+        firstTargetVar = false;
+        while(!allTargetVars.empty()){
+            curTargetVar = allTargetVars[allTargetVars.size() - 1];
+            allTargetVars.pop_back();
+            new_body_list.push_back(mutate(body));
+        }
     }
     return LoopNest::make(new_index_list, new_body_list);
 }
@@ -172,6 +186,71 @@ DerivMutator::visit(Ref<const Kernel> op) {
     std::cout << std::endl;
     return newknode;
 }
+
+
+bool 
+DerivMutator:: exprcompare(Expr a, Expr b){
+    if(a.node_type() == IRNodeType::Var && b.node_type() == IRNodeType::Var){
+        return varcompare(a.as<Var>(), b.as<Var>());
+    }
+    if(a.node_type() == IRNodeType::Binary && b.node_type() == IRNodeType::Binary){
+        return binarycompare(a.as<Binary>(), b.as<Binary>());
+    }
+    if(a.node_type() == IRNodeType::IntImm && b.node_type() == IRNodeType::IntImm){
+        return intimmcompare(a.as<IntImm>(), b.as<IntImm>());
+    }
+    if(a.node_type() == IRNodeType::StringImm && b.node_type() == IRNodeType::StringImm){
+        return strimmcompare(a.as<StringImm>(), b.as<StringImm>());
+    }
+    if(a.node_type() == IRNodeType::Index && b.node_type() == IRNodeType::Index){
+        return indexcompare(a.as<Index>(), b.as<Index>());
+    }
+
+    std::cout << "!!!exprcompare node type not supported!!!" << std::endl;
+    return true; //true or false by default?
+}
+
+
+bool
+DerivMutator:: varcompare(Ref<const Var> a, Ref<const Var> b){
+    bool cmpresult = a->name == b->name ? 0 : 1;
+    cmpresult |= a->args.size() == b->args.size() ? 0 : 1;
+    if(cmpresult != 0)  //not same
+        return cmpresult;
+    for(int i = 0; i < a->args.size(); i++){
+        cmpresult |= exprcompare(a->args[i], b->args[i]);
+    }
+    return cmpresult;
+}
+
+bool 
+DerivMutator::binarycompare(Ref<const Binary> a, Ref<const Binary> b){
+    bool cmpresult = a->op_type == b->op_type ? 0 : 1;
+    if(cmpresult !=0)
+        return cmpresult;
+    cmpresult |= exprcompare(a->a, b->a);
+    cmpresult |= exprcompare(a->b, b->b);
+    return cmpresult;
+}
+
+bool 
+DerivMutator::strimmcompare(Ref<const StringImm> a, Ref<const StringImm> b){
+    bool cmpresult = (a->value()).compare(b->value()) == 0 ? 0 : 1;
+    return cmpresult;
+}
+
+bool 
+DerivMutator::intimmcompare(Ref<const IntImm> a, Ref<const IntImm> b){
+    bool cmpresult = a->value() == b->value() ? 0 : 1;
+    return cmpresult;
+}
+
+bool 
+DerivMutator::indexcompare(Ref<const Index> a, Ref<const Index> b){
+    bool cmpresult = (a->name).compare(b->name) == 0 ? 0 : 1;
+    return cmpresult;
+}
+
 
 void 
 MyVisitor::visit(Ref<const Var> op) {

@@ -51,6 +51,9 @@ class Ref {
 
     Ref(Ref<T> &other) : ptr(other.ptr) {}
 
+    Ref(const Ref<T> &other) : ptr(other.ptr) {}
+
+
     Ref(Ref<T> &&other) : ptr(std::move(other.ptr)) {}
 
     /**

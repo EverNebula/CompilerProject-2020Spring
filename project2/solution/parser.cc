@@ -584,6 +584,7 @@ Parser:: parse_S(string str, std::vector<Expr> &vars)
     {
         std::cout << "invalid statement. (without =)" << std::endl;
     }
+    return {};
 }
 
 std::vector<Stmt>
