@@ -85,6 +85,8 @@ void readjson(std::ifstream &ifile){
     for(auto &gradval : root_group["grad_to"])
         gradto.push_back(gradval.asString());
 
+    // if (name == "grad_case10"||name == "grad_case8")
+    //     return;
     Parser psr(name, insvec, outvec, gradto,data_type, kernel);
     psr.build_Kernel();
     // Expr tref = psr.parse_RHS("A<4>[k]+B<7,8>[j+1,j+2]");

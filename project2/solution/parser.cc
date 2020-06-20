@@ -719,7 +719,12 @@ Parser:: build_Kernel(){
             usedVar.insert(varname);
             // std::cout << varname << std::endl;
         }
-        codes += printer.print(derivknode);
+
+        std::cout << printer.print(derivknode) << "\n";
+
+        IndexMutator imt("d"+gradmtx, "d"+outvec[0]);
+        Group finalknode = imt.mutate(derivknode);
+        codes += printer.print(finalknode);
     
         //function body
         // dstfile << code << "\n";
@@ -822,7 +827,7 @@ Parser:: build_Kernel(){
     dstfile << ssm.str();
 
     //function { and temp declaration
-    dstfile << "{\n" << tempdc.str();
+    dstfile << "{\n";// << tempdc.str();
 
     dstfile << gradinit.str();
 

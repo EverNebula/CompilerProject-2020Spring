@@ -5,6 +5,8 @@
 #include "IRMutator.h"
 #include "IRVisitor.h"
 #include <set>
+#include <map>
+#include <stack>
 
 using namespace Boost::Internal;
 // function mutate & visit takes the derivative of expr
@@ -38,6 +40,29 @@ class DerivMutator : public IRMutator{
     std::set<std::string> usedVar;
 };
 
+// alter index in lhs
+class IndexMutator : public IRMutator{
+    public:
+    IndexMutator(std::string _targetMtx, std::string _outMtx)
+    : IRMutator(), targetMtx(_targetMtx), outMtx(_outMtx) {};
+    Expr visit(Ref<const IntImm>) override;
+    Expr visit(Ref<const UIntImm>) override;
+    Expr visit(Ref<const FloatImm>) override;
+    Expr visit(Ref<const Var>) override;
+    Expr visit(Ref<const Binary>) override; 
+    Stmt visit(Ref<const Move>) override;
+    Stmt visit(Ref<const LoopNest>) override;
+    Expr visit(Ref<const Dom>) override;
+    Expr visit(Ref<const Index>) override;
+
+    std::string targetMtx;
+    std::string outMtx;
+    std::set<std::string> victimVar;
+    std::map<std::string, Ref<const Index>> replaceVar;
+    std::map<std::string, Expr> replaceExpr;
+    std::map<std::string, Ref<const Index>> originVar;
+};
+
 //MyVisitor collects used Var nodes to imply input arguments
 class MyVisitor : public IRVisitor{
     public:
@@ -45,6 +70,15 @@ class MyVisitor : public IRVisitor{
         std::set<std::string> usedVar;
         void visit(Ref<const Var> op) override;
         void visit(Ref<const Kernel> op) override;
+};
+
+class StackItem{
+public:
+    Ref<const Binary> old_op;
+    Expr sub;
+    int pos;
+    StackItem(Ref<const Binary> old_op, Expr sub, int pos)
+        :old_op(old_op), sub(sub), pos(pos) {};
 };
 
 #endif
