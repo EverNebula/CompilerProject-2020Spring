@@ -42,10 +42,10 @@ DerivMutator::visit(Ref<const Var> op) {
         return Var::make(grad_var->type(), grad_var->name, grad_var->args, grad_var->shape);;
         // return Var::make(op->type(), "d"+op->name, op->args, op->shape);
     }
-    else
-    {
-        usedVar.insert(op->name);
-    }
+    // else
+    // {
+    //     usedVar.insert(op->name);
+    // }
     
     return Expr(0);
 }
@@ -145,4 +145,50 @@ DerivMutator::visit(Ref<const LoopNest> op) {
         new_body_list.push_back(mutate(body));
     }
     return LoopNest::make(new_index_list, new_body_list);
+}
+
+Group 
+DerivMutator::visit(Ref<const Kernel> op) {
+    std::vector<Expr> new_inputs;
+    for (auto expr : op->inputs) {
+        new_inputs.push_back(mutate(expr));
+    }
+    std::vector<Expr> new_outputs;
+    for (auto expr : op->outputs) {
+        new_outputs.push_back(mutate(expr));
+    }
+    std::vector<Stmt> new_stmt_list;
+    for (auto stmt : op->stmt_list) {
+        new_stmt_list.push_back(mutate(stmt));
+    }
+    Group newknode = Kernel::make(op->name, new_inputs, new_outputs, new_stmt_list, op->kernel_type);
+    MyVisitor myvis;
+    newknode.visit_group(&myvis);
+    usedVar.clear();
+
+    for(auto uv : myvis.usedVar){
+        usedVar.insert(uv);
+    }
+    std::cout << std::endl;
+    return newknode;
+}
+
+void 
+MyVisitor::visit(Ref<const Var> op) {
+    std::cout << op->name << ", ";
+    if(usedVar.find(op->name) == usedVar.end())
+        usedVar.insert(op->name);
+
+    for (auto arg : op->args) {
+        arg.visit_expr(this);
+    }
+    return;
+}
+
+void 
+MyVisitor::visit(Ref<const Kernel> op) {
+    for (auto stmt : op->stmt_list) {
+        stmt.visit_stmt(this);
+    }
+    return;
 }

@@ -716,7 +716,7 @@ Parser:: build_Kernel(){
         for (auto varname : dmt.usedVar)
         {
             usedVar.insert(varname);
-            std::cout << varname << std::endl;
+            // std::cout << varname << std::endl;
         }
         codes += printer.print(derivknode);
     
@@ -726,31 +726,31 @@ Parser:: build_Kernel(){
 
     for(auto instr : insvec)
     {
-        if (usedVar.count(instr) != 0 || name == "grad_case2")
-        {
-            if (first == false)
-                ssm << ",";
+        if(usedVar.find(instr) == usedVar.end())
+            continue;
+        if (first == false)
+            ssm << ",";
 
-            std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(instr);
-            if(itr == var_range.end()){
-                std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
-                continue;
-            }
-            ssm << tp << " (& " << instr << ")";
-            for(auto irange : itr->second){
-
-                if(itr->second.size() == 1 && irange == 1) 
-                {
-                    ;//no []
-                }
-                else{
-                    ssm << "[" << irange << "]";
-                }
-
-            }
-
-            first = false;            
+        std::map<string, std::vector<size_t>> ::iterator  itr = var_range.find(instr);
+        if(itr == var_range.end()){
+            std::cout << "Error! Couldn't find variable in map:var_range" << std::endl;
+            continue;
         }
+        ssm << tp << " (& " << instr << ")";
+        for(auto irange : itr->second){
+
+            if(itr->second.size() == 1 && irange == 1) 
+            {
+                ;//no []
+            }
+            else{
+                ssm << "[" << irange << "]";
+            }
+
+        }
+
+        first = false;            
+        
     }
 
 

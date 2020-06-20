@@ -3,6 +3,7 @@
 
 #include "IR.h"
 #include "IRMutator.h"
+#include "IRVisitor.h"
 #include <set>
 
 using namespace Boost::Internal;
@@ -18,10 +19,20 @@ class DerivMutator : public IRMutator{
     Expr visit(Ref<const Binary>) override; 
     Stmt visit(Ref<const Move>) override;
     Stmt visit(Ref<const LoopNest>) override;
-
+    Group visit(Ref<const Kernel>) override;
         
     std::string targetMtx;
     std::string outMtx;
     std::set<std::string> usedVar;
 };
+
+//MyVisitor collects used Var nodes to imply input arguments
+class MyVisitor : public IRVisitor{
+    public:
+        MyVisitor() : IRVisitor(), usedVar({}){};
+        std::set<std::string> usedVar;
+        void visit(Ref<const Var> op) override;
+        void visit(Ref<const Kernel> op) override;
+};
+
 #endif
