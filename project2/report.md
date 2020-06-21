@@ -83,7 +83,7 @@ github：https://github.com/EverNebula/CompilerProject-2020Spring
   }
 ```
 
-可以发现，它用`dB2,dB3`代替了原来的`r,s`，消除了左边下标的计算。
+可以发现，它用`dB2,dB3`代替了原来的`r,s`，消除了左边下标的计算。同时对应下表的变换，加入了If语句来防止数组访问越界。
 
 ### 牺牲Index
 
