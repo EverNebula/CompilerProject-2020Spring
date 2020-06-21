@@ -5,7 +5,7 @@ class Printer{
  public:
     Printer() {
         tabn = 0;
-        index = 4;
+        index = 0;
     }
     std::string print(const Expr&);
     std::string print(const Stmt&);
@@ -29,6 +29,6 @@ class Printer{
  private:
     std::ostringstream oss;
     int tabn;
-    int index; 
+    int index;
 };
 
