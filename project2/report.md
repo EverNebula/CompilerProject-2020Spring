@@ -273,7 +273,7 @@ for (int dB0 = 0; dB0 < 10; ++dB0) {
 
 测试点全部通过：
 
-[![pic](/Users/xuhaotian/gitrepo/CompilerProject-2020Spring/project2/pic.png)
+[![pic](/project2/pic.png)
 
 ## 具体例子解释
 
