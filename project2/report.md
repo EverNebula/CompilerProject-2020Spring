@@ -7,9 +7,9 @@ Project2要求我们在之前的基础上实现C++语言的自动求导器。为
 
 邬涵博：因子替换、Index转换
 
-徐昊天：函数签名生成、链式求导、消除常数项、语句拆分
+徐昊天：函数签名生成、链式求导、消除常数项
 
-刘镇：
+刘镇：语句拆分、代码优化
 
 github：https://github.com/EverNebula/CompilerProject-2020Spring
 
